@@ -259,9 +259,10 @@ app.post('/api/generate-reply', async (req, res) => {
     const reply = result.response.text().toLowerCase(); // Ensure lowercase
     res.json({ reply: generatedReplyText }); 
     } catch (error) {
-        console.error("AI Error:", error);
-        res.status(500).json({ error: "Brain fog..." });
-    } 
+    console.error("AI Error:", error);
+    // This sends the REAL error message to your Tampermonkey log
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.listen(PORT, () => console.log(`🚀 MemeVault Backend running on http://localhost:${PORT}`));
