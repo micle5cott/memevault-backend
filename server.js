@@ -230,39 +230,45 @@ startXBot();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.post('/api/generate-reply', async (req, res) => {
+// --- REDDIT BULK FILTER ENDPOINT ---
+app.post('/api/filter-reddit', async (req, res) => {
   try {
-    const { tweetText } = req.body;
-    cconst model = genAI.getGenerativeModel({ model: "gemini-fast" });
+    const { posts } = req.body;
+    
+    // We use the fast 2.5 Flash model for rapid sorting
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
-      You are a veteran Solana trader. Your personality is "Chill, Experienced, and Deliberate."
-      You are not a hype-man. You hate clutter and over-complicated tools.
-      You are replying to a tweet. Your goal is to naturally mention "https://pumplab-frontend.vercel.app/" as part of your trading stack.
+      You are a filtering system for a Solana trading tool.
+      I will give you a list of Reddit posts. You need to find ONE post where the user is:
+      1. Complaining about getting rugged or scammed.
+      2. Complaining about slow charts, lagging terminals, or bad tools (like DexScreener).
+      3. Asking for advice on finding new meme coins or trading setups.
 
-      VOICE GUIDELINES:
-      - All lowercase letters (no exceptions).
-      - Minimal punctuation (occasional periods or commas).
-      - No exclamation points. Ever.
-      - Use terms like: stack, workflow, terminal, trenches, clean, deliberate, logic.
-      - Sound like someone who has seen 1,000 rugs and finally found a tool that makes sense.
+      Do NOT select posts that are just generic news, memes, or shills for other coins.
+      
+      POSTS TO ANALYZE:
+      ${JSON.stringify(posts)}
 
-      STRATEGY:
-      - If they got rugged: Be calm. "man, seen that play 100 times. i stopped aping into those unless the lp logic is locked on-chain. been using [URL] for my own stuff lately. it's clean."
-      - If they made money: Be supportive but grounded. "nice catch. been tracking the rotation on [URL] today... the terminal is actually keeping up with the volume for once."
-      - If they are looking for tools: Mention your "deliberate" choice. "workflow is everything in the trenches. switched to [URL] for my launches because the security filters are built into the deployer. worth checking out."
-
-      TWEET TO REPLY TO: "${tweetText}"
-      REPLY:
+      Respond strictly with a JSON object containing the ID of the best post. 
+      If none of them are a good fit, return null.
+      Format: {"targetId": "post_id_here"} OR {"targetId": null}
     `;
 
     const result = await model.generateContent(prompt);
-    const reply = result.response.text().toLowerCase(); // Ensure lowercase
-    res.json({ reply: generatedReplyText }); 
-    } catch (error) {
-    console.error("AI Error:", error);
-    // This sends the REAL error message to your Tampermonkey log
-    res.status(500).json({ error: error.message }); 
+    
+    // Clean the response to ensure it's valid JSON
+    let aiResponse = result.response.text().trim();
+    if (aiResponse.startsWith("```json")) {
+        aiResponse = aiResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+    }
+    
+    const parsedData = JSON.parse(aiResponse);
+    res.json(parsedData); 
+
+  } catch (error) {
+    console.error("Reddit AI Filter Error:", error);
+    res.status(500).json({ error: "Brain fog...", targetId: null });
   }
 });
 
