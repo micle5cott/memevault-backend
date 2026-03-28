@@ -261,7 +261,7 @@ app.post('/api/generate-reply', async (req, res) => {
     } catch (error) {
         console.error("AI Error:", error);
         res.status(500).json({ error: "Brain fog..." });
-    }
+    } 
 });
 
 app.listen(PORT, () => console.log(`🚀 MemeVault Backend running on http://localhost:${PORT}`));
