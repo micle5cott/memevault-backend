@@ -272,4 +272,25 @@ app.post('/api/filter-reddit', async (req, res) => {
   }
 });
 
+// --- HELIUS TRANSACTION PARSER PROXY ---
+app.post('/api/parse-tx', async (req, res) => {
+  try {
+    const { signature } = req.body;
+    // Put your key here safely on the server
+    const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "3637ceed-59ac-465a-9a98-ebc048da759f"; 
+    
+    const response = await fetch(`https://api.helius.xyz/v0/transactions/?api-key=${HELIUS_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: [signature] })
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Helius Proxy Error:", error);
+    res.status(500).json({ error: "Failed to parse transaction" });
+  }
+});
+
 app.listen(PORT, () => console.log(`🚀 MemeVault Backend running on http://localhost:${PORT}`));
