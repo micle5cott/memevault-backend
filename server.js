@@ -276,8 +276,8 @@ app.post('/api/filter-reddit', async (req, res) => {
 app.post('/api/parse-tx', async (req, res) => {
   try {
     const { signature } = req.body;
-    // Put your key here safely on the server
-    const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "3637ceed-59ac-465a-9a98-ebc048da759f"; 
+    // Your Helius API Key
+    const HELIUS_API_KEY = "3637ceed-59ac-465a-9a98-ebc048da759f"; 
     
     const response = await fetch(`https://api.helius.xyz/v0/transactions/?api-key=${HELIUS_API_KEY}`, {
         method: 'POST',
