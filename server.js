@@ -300,4 +300,42 @@ app.post('/api/parse-tx', async (req, res) => {
   }
 });
 
+// --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
+
+// 1. Fetch the Route/Quote
+app.get('/api/jup-quote', async (req, res) => {
+  try {
+    const { inputMint, outputMint, amount, slippageBps } = req.query;
+    
+    // The server asks Jupiter directly
+    const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
+    const response = await fetch(targetUrl);
+    
+    const data = await response.json();
+    res.json(data); // Pass it back to the frontend
+  } catch (err) {
+    console.error("Jupiter Quote Proxy Error:", err);
+    res.status(500).json({ error: "Failed to fetch quote from Jupiter" });
+  }
+});
+
+// 2. Build the Transaction
+app.post('/api/jup-swap', async (req, res) => {
+  try {
+    // The server passes the payload to Jupiter
+    const targetUrl = 'https://quote-api.jup.ag/v6/swap';
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    
+    const data = await response.json();
+    res.json(data); // Pass the serialized transaction back to the frontend
+  } catch (err) {
+    console.error("Jupiter Swap Proxy Error:", err);
+    res.status(500).json({ error: "Failed to fetch swap from Jupiter" });
+  }
+});
+
 app.listen(PORT, () => console.log(`🚀 MemeVault Backend running on http://localhost:${PORT}`));
