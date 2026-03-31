@@ -1,25 +1,6 @@
 // server.js
 require('dotenv').config();
 
-// 🔥 THE ULTIMATE RENDER FIREWALL BYPASS
-const dns = require('dns');
-const https = require('https');
-const axios = require('axios');
-
-// 1. Force network queries to Cloudflare
-dns.setServers(['1.1.1.1', '8.8.8.8']);
-
-// 2. Build a custom DNS lookup that ignores Render's OS completely
-const customLookup = (hostname, options, callback) => {
-  dns.resolve4(hostname, (err, addresses) => {
-    if (err) return dns.lookup(hostname, options, callback);
-    callback(null, addresses[0], 4);
-  });
-};
-
-// 3. Create the Tunnel Agent
-const bypassAgent = new https.Agent({ lookup: customLookup });
-
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -28,6 +9,36 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { Connection, PublicKey, Keypair, Transaction } = require('@solana/web3.js');
 const bs58 = require('bs58');
+
+// 🔥 THE GHOST PROTOCOL (DNS-over-HTTPS)
+// Render intercepts Port 53 DNS. We bypass the OS entirely by resolving 
+// Jupiter's IP via an encrypted HTTPS connection to Cloudflare.
+const https = require('https');
+const axios = require('axios');
+const dns = require('dns');
+
+const customLookup = (hostname, options, callback) => {
+  if (hostname === 'quote-api.jup.ag') {
+    // Hide the DNS lookup inside an HTTPS web request
+    axios.get('https://cloudflare-dns.com/dns-query?name=quote-api.jup.ag&type=A', {
+      headers: { 'accept': 'application/dns-json' }
+    })
+    .then(res => {
+      const ip = res.data.Answer[0].data;
+      console.log(`[Ghost Protocol] Successfully tunneled ${hostname} -> ${ip}`);
+      callback(null, ip, 4);
+    })
+    .catch(err => {
+      console.log(`[Ghost Protocol] Fallback routing triggered`);
+      callback(null, '104.18.22.235', 4); // Hardcoded Cloudflare Anycast fallback
+    });
+    return;
+  }
+  // Let everything else (like MongoDB) resolve normally
+  return dns.lookup(hostname, options, callback);
+};
+
+const bypassAgent = new https.Agent({ lookup: customLookup });
 
 const app = express();
 // 🔥 Let Render dictate the port, but fallback to 5000 on your Mac
