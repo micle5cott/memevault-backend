@@ -307,19 +307,24 @@ app.post('/api/parse-tx', async (req, res) => {
 
 // --- JUPITER API PROXIES (Upgraded to New V1 Architecture) ---
 
+// 🔥 PASTE YOUR FREE API KEY HERE
+const JUPITER_API_KEY = "87335e81-e89d-4208-8703-a5d5631915e4"; 
+
 // 1. Fetch the Route/Quote
 app.get('/api/jup-quote', async (req, res) => {
   try {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
-    
-    // 🔥 THE NEW JUPITER ENDPOINT
     const targetUrl = `https://api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
     
-    const response = await axios.get(targetUrl, { httpsAgent: ipv4Agent });
+    // Pass the API key in the headers
+    const response = await axios.get(targetUrl, { 
+      headers: { 'x-api-key': JUPITER_API_KEY },
+      httpsAgent: ipv4Agent 
+    });
+    
     res.json(response.data); 
     
   } catch (err) {
-    // Better error logging so we can see exactly what Jupiter says
     console.error("Jupiter Quote Proxy Error:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to fetch quote from Jupiter" });
   }
@@ -328,11 +333,14 @@ app.get('/api/jup-quote', async (req, res) => {
 // 2. Build the Transaction
 app.post('/api/jup-swap', async (req, res) => {
   try {
-    // 🔥 THE NEW JUPITER ENDPOINT
     const targetUrl = 'https://api.jup.ag/swap/v1/swap';
     
+    // Pass the API key in the headers
     const response = await axios.post(targetUrl, req.body, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': JUPITER_API_KEY
+      },
       httpsAgent: ipv4Agent
     });
     
