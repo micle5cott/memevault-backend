@@ -307,38 +307,38 @@ app.post('/api/parse-tx', async (req, res) => {
 
 // --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
 
-// 1. Fetch the Route/Quote
+// --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
+
+// 1. Fetch the Route/Quote (UPGRADED TO AXIOS)
 app.get('/api/jup-quote', async (req, res) => {
   try {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
     
-    // The server asks Jupiter directly
     const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
-    const response = await fetch(targetUrl);
     
-    const data = await response.json();
-    res.json(data); // Pass it back to the frontend
+    // Axios automatically parses the JSON and handles the DNS perfectly
+    const response = await axios.get(targetUrl);
+    res.json(response.data); 
+    
   } catch (err) {
-    console.error("Jupiter Quote Proxy Error:", err);
+    console.error("Jupiter Quote Proxy Error:", err.message);
     res.status(500).json({ error: "Failed to fetch quote from Jupiter" });
   }
 });
 
-// 2. Build the Transaction
+// 2. Build the Transaction (UPGRADED TO AXIOS)
 app.post('/api/jup-swap', async (req, res) => {
   try {
-    // The server passes the payload to Jupiter
     const targetUrl = 'https://quote-api.jup.ag/v6/swap';
-    const response = await fetch(targetUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
+    
+    const response = await axios.post(targetUrl, req.body, {
+      headers: { 'Content-Type': 'application/json' }
     });
     
-    const data = await response.json();
-    res.json(data); // Pass the serialized transaction back to the frontend
+    res.json(response.data); 
+    
   } catch (err) {
-    console.error("Jupiter Swap Proxy Error:", err);
+    console.error("Jupiter Swap Proxy Error:", err.message);
     res.status(500).json({ error: "Failed to fetch swap from Jupiter" });
   }
 });
