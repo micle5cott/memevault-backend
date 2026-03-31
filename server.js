@@ -1,7 +1,8 @@
 // server.js
-// server.js
 const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first'); // 🔥 THE SLEDGEHAMMER: Force IPv4
+// 🔥 SLEDGEHAMMER 2.0: Bypass Render's broken DNS entirely. Ask Cloudflare directly.
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+dns.setDefaultResultOrder('ipv4first');
 
 const express = require('express');
 const axios = require('axios');
@@ -309,18 +310,12 @@ app.post('/api/parse-tx', async (req, res) => {
 
 // --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
 
-// --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
-
-// 1. Fetch the Route/Quote (UPGRADED TO AXIOS)
-// --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
-
 // 1. Fetch the Route/Quote
 app.get('/api/jup-quote', async (req, res) => {
   try {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
     const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
     
-    // Inject the IPv4 Agent
     const response = await axios.get(targetUrl, { httpsAgent: ipv4Agent });
     res.json(response.data); 
     
@@ -335,7 +330,6 @@ app.post('/api/jup-swap', async (req, res) => {
   try {
     const targetUrl = 'https://quote-api.jup.ag/v6/swap';
     
-    // Inject the IPv4 Agent
     const response = await axios.post(targetUrl, req.body, {
       headers: { 'Content-Type': 'application/json' },
       httpsAgent: ipv4Agent
