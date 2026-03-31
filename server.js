@@ -1,22 +1,33 @@
 // server.js
+require('dotenv').config();
+
+// 🔥 THE ULTIMATE RENDER FIREWALL BYPASS
 const dns = require('dns');
-// 🔥 SLEDGEHAMMER 2.0: Bypass Render's broken DNS entirely. Ask Cloudflare directly.
+const https = require('https');
+const axios = require('axios');
+
+// 1. Force network queries to Cloudflare
 dns.setServers(['1.1.1.1', '8.8.8.8']);
-dns.setDefaultResultOrder('ipv4first');
+
+// 2. Build a custom DNS lookup that ignores Render's OS completely
+const customLookup = (hostname, options, callback) => {
+  dns.resolve4(hostname, (err, addresses) => {
+    if (err) return dns.lookup(hostname, options, callback);
+    callback(null, addresses[0], 4);
+  });
+};
+
+// 3. Create the Tunnel Agent
+const bypassAgent = new https.Agent({ lookup: customLookup });
 
 const express = require('express');
-const axios = require('axios');
-const https = require('https');
-const ipv4Agent = new https.Agent({ family: 4 });
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-const { Connection, PublicKey, Keypair, Transaction, sendAndConfirmTransaction } = require('@solana/web3.js');
+const { Connection, PublicKey, Keypair, Transaction } = require('@solana/web3.js');
 const bs58 = require('bs58');
-const { MarketV2, Liquidity, Token, Currency, DEVNET_PROGRAM_ID } = require('@raydium-io/raydium-sdk');
-require('dotenv').config();
 
 const app = express();
 // 🔥 Let Render dictate the port, but fallback to 5000 on your Mac
