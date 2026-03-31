@@ -327,7 +327,8 @@ app.get('/api/jup-quote', async (req, res) => {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
     const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
     
-    const response = await axios.get(targetUrl, { httpsAgent: ipv4Agent });
+    // Inject the Bypass Agent
+    const response = await axios.get(targetUrl, { httpsAgent: bypassAgent });
     res.json(response.data); 
     
   } catch (err) {
@@ -341,9 +342,10 @@ app.post('/api/jup-swap', async (req, res) => {
   try {
     const targetUrl = 'https://quote-api.jup.ag/v6/swap';
     
+    // Inject the Bypass Agent
     const response = await axios.post(targetUrl, req.body, {
       headers: { 'Content-Type': 'application/json' },
-      httpsAgent: ipv4Agent
+      httpsAgent: bypassAgent
     });
     
     res.json(response.data); 
