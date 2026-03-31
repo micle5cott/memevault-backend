@@ -320,7 +320,7 @@ app.get('/api/jup-quote', async (req, res) => {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
     const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
     
-    // 🔥 Inject the IPv4 Agent
+    // Inject the IPv4 Agent
     const response = await axios.get(targetUrl, { httpsAgent: ipv4Agent });
     res.json(response.data); 
     
@@ -335,7 +335,7 @@ app.post('/api/jup-swap', async (req, res) => {
   try {
     const targetUrl = 'https://quote-api.jup.ag/v6/swap';
     
-    // 🔥 Inject the IPv4 Agent
+    // Inject the IPv4 Agent
     const response = await axios.post(targetUrl, req.body, {
       headers: { 'Content-Type': 'application/json' },
       httpsAgent: ipv4Agent
