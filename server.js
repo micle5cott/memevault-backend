@@ -4,6 +4,7 @@ const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first'); // 🔥 THE SLEDGEHAMMER: Force IPv4
 
 const express = require('express');
+const axios = require('axios');
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
