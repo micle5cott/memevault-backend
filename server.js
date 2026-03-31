@@ -9,47 +9,11 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { Connection, PublicKey, Keypair, Transaction } = require('@solana/web3.js');
 const bs58 = require('bs58');
-
-// 🔥 THE GHOST PROTOCOL (DNS-over-HTTPS)
-// Render intercepts Port 53 DNS. We bypass the OS entirely by resolving 
-// Jupiter's IP via an encrypted HTTPS connection to Cloudflare.
-// 🔥 THE GHOST PROTOCOL V2 (Fixed Signature & Google Tunnel)
-const https = require('https');
 const axios = require('axios');
-const dns = require('dns');
+const https = require('https');
 
-const customLookup = (hostname, options, callback) => {
-  // Node 20+ expects an array of objects if options.all is true
-  const isAll = typeof options === 'object' && options.all;
-  
-  const sendResponse = (ip) => {
-    if (isAll) {
-      callback(null, [{ address: ip, family: 4 }]);
-    } else {
-      callback(null, ip, 4);
-    }
-  };
-
-  if (hostname === 'quote-api.jup.ag') {
-    // Tunnel through Google's encrypted DNS (Render cannot block this)
-    axios.get('https://dns.google/resolve?name=quote-api.jup.ag&type=A')
-    .then(res => {
-      const ip = res.data.Answer[0].data;
-      console.log(`[Ghost Protocol] Tunneled via Google DoH -> ${ip}`);
-      sendResponse(ip);
-    })
-    .catch(err => {
-      console.log(`[Ghost Protocol] DoH Failed, using Hardcoded Fallback`);
-      sendResponse('104.18.22.235'); // Known Cloudflare IP for Jupiter
-    });
-    return;
-  }
-  
-  // Standard routing for everything else (MongoDB, etc.)
-  return dns.lookup(hostname, options, callback);
-};
-
-const bypassAgent = new https.Agent({ lookup: customLookup });
+// Standard safety net for Render's IPv6 quirks
+const ipv4Agent = new https.Agent({ family: 4 });
 
 const app = express();
 // 🔥 Let Render dictate the port, but fallback to 5000 on your Mac
@@ -341,20 +305,22 @@ app.post('/api/parse-tx', async (req, res) => {
   }
 });
 
-// --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
+// --- JUPITER API PROXIES (Upgraded to New V1 Architecture) ---
 
 // 1. Fetch the Route/Quote
 app.get('/api/jup-quote', async (req, res) => {
   try {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
-    const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
     
-    // Inject the Bypass Agent
-    const response = await axios.get(targetUrl, { httpsAgent: bypassAgent });
+    // 🔥 THE NEW JUPITER ENDPOINT
+    const targetUrl = `https://api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
+    
+    const response = await axios.get(targetUrl, { httpsAgent: ipv4Agent });
     res.json(response.data); 
     
   } catch (err) {
-    console.error("Jupiter Quote Proxy Error:", err.message);
+    // Better error logging so we can see exactly what Jupiter says
+    console.error("Jupiter Quote Proxy Error:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to fetch quote from Jupiter" });
   }
 });
@@ -362,18 +328,18 @@ app.get('/api/jup-quote', async (req, res) => {
 // 2. Build the Transaction
 app.post('/api/jup-swap', async (req, res) => {
   try {
-    const targetUrl = 'https://quote-api.jup.ag/v6/swap';
+    // 🔥 THE NEW JUPITER ENDPOINT
+    const targetUrl = 'https://api.jup.ag/swap/v1/swap';
     
-    // Inject the Bypass Agent
     const response = await axios.post(targetUrl, req.body, {
       headers: { 'Content-Type': 'application/json' },
-      httpsAgent: bypassAgent
+      httpsAgent: ipv4Agent
     });
     
     res.json(response.data); 
     
   } catch (err) {
-    console.error("Jupiter Swap Proxy Error:", err.message);
+    console.error("Jupiter Swap Proxy Error:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to fetch swap from Jupiter" });
   }
 });
