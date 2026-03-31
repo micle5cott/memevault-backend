@@ -6,6 +6,7 @@ dns.setDefaultResultOrder('ipv4first'); // 🔥 THE SLEDGEHAMMER: Force IPv4
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
+const ipv4Agent = new https.Agent({ family: 4 });
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
