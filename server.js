@@ -231,8 +231,8 @@ app.get('/api/tweets', async (req, res) => {
 });
 
 // --- BACKGROUND WORKERS ---
-const { startXBot } = require('./x-bot');
-startXBot();
+//const { startXBot } = require('./x-bot');
+//startXBot();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
