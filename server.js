@@ -13,28 +13,39 @@ const bs58 = require('bs58');
 // 🔥 THE GHOST PROTOCOL (DNS-over-HTTPS)
 // Render intercepts Port 53 DNS. We bypass the OS entirely by resolving 
 // Jupiter's IP via an encrypted HTTPS connection to Cloudflare.
+// 🔥 THE GHOST PROTOCOL V2 (Fixed Signature & Google Tunnel)
 const https = require('https');
 const axios = require('axios');
 const dns = require('dns');
 
 const customLookup = (hostname, options, callback) => {
+  // Node 20+ expects an array of objects if options.all is true
+  const isAll = typeof options === 'object' && options.all;
+  
+  const sendResponse = (ip) => {
+    if (isAll) {
+      callback(null, [{ address: ip, family: 4 }]);
+    } else {
+      callback(null, ip, 4);
+    }
+  };
+
   if (hostname === 'quote-api.jup.ag') {
-    // Hide the DNS lookup inside an HTTPS web request
-    axios.get('https://cloudflare-dns.com/dns-query?name=quote-api.jup.ag&type=A', {
-      headers: { 'accept': 'application/dns-json' }
-    })
+    // Tunnel through Google's encrypted DNS (Render cannot block this)
+    axios.get('https://dns.google/resolve?name=quote-api.jup.ag&type=A')
     .then(res => {
       const ip = res.data.Answer[0].data;
-      console.log(`[Ghost Protocol] Successfully tunneled ${hostname} -> ${ip}`);
-      callback(null, ip, 4);
+      console.log(`[Ghost Protocol] Tunneled via Google DoH -> ${ip}`);
+      sendResponse(ip);
     })
     .catch(err => {
-      console.log(`[Ghost Protocol] Fallback routing triggered`);
-      callback(null, '104.18.22.235', 4); // Hardcoded Cloudflare Anycast fallback
+      console.log(`[Ghost Protocol] DoH Failed, using Hardcoded Fallback`);
+      sendResponse('104.18.22.235'); // Known Cloudflare IP for Jupiter
     });
     return;
   }
-  // Let everything else (like MongoDB) resolve normally
+  
+  // Standard routing for everything else (MongoDB, etc.)
   return dns.lookup(hostname, options, callback);
 };
 
