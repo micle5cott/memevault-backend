@@ -311,14 +311,16 @@ app.post('/api/parse-tx', async (req, res) => {
 // --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
 
 // 1. Fetch the Route/Quote (UPGRADED TO AXIOS)
+// --- JUPITER API PROXIES (Bypass ISP & Adblockers) ---
+
+// 1. Fetch the Route/Quote
 app.get('/api/jup-quote', async (req, res) => {
   try {
     const { inputMint, outputMint, amount, slippageBps } = req.query;
-    
     const targetUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
     
-    // Axios automatically parses the JSON and handles the DNS perfectly
-    const response = await axios.get(targetUrl);
+    // 🔥 Inject the IPv4 Agent
+    const response = await axios.get(targetUrl, { httpsAgent: ipv4Agent });
     res.json(response.data); 
     
   } catch (err) {
@@ -327,13 +329,15 @@ app.get('/api/jup-quote', async (req, res) => {
   }
 });
 
-// 2. Build the Transaction (UPGRADED TO AXIOS)
+// 2. Build the Transaction
 app.post('/api/jup-swap', async (req, res) => {
   try {
     const targetUrl = 'https://quote-api.jup.ag/v6/swap';
     
+    // 🔥 Inject the IPv4 Agent
     const response = await axios.post(targetUrl, req.body, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      httpsAgent: ipv4Agent
     });
     
     res.json(response.data); 
